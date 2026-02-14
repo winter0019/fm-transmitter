@@ -1,16 +1,8 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-// Safe access to API key to prevent crashes in raw browser environments
-const getApiKey = () => {
-  try {
-    return process.env.API_KEY || "";
-  } catch (e) {
-    return "";
-  }
-};
-
-const ai = new GoogleGenAI({ apiKey: getApiKey() });
+// Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function getAssistantResponse(prompt: string, context: string) {
   try {
@@ -28,6 +20,7 @@ export async function getAssistantResponse(prompt: string, context: string) {
         temperature: 0.7,
       },
     });
+    // Use .text property directly
     return response.text || "I'm sorry, I couldn't process that request.";
   } catch (error) {
     console.error("Gemini API Error:", error);
