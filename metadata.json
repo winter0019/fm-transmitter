@@ -1,0 +1,7 @@
+{
+  "name": "OmniControl Master & FM Link",
+  "description": "A high-fidelity universal remote and FM transmitter interface for controlling home appliances (DStv, AC, TV) and syncing mobile audio to car radios.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
