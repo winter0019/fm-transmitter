@@ -14,6 +14,7 @@ export interface Device {
   brand: string;
   type: DeviceType;
   status: 'online' | 'offline';
+  powerState: 'on' | 'off';
   icon: string;
 }
 

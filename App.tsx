@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   LayoutGrid, Radio, Zap, Settings, Wifi, User, Menu, Bell, Search, 
   Sparkles, Plus, Mic2, Smartphone, CarFront, RadioTower, Waves, 
-  SignalHigh, Thermometer, ShieldCheck, X, Tv, Wind, Box, Lightbulb, Volume2
+  SignalHigh, Thermometer, ShieldCheck, X, Tv, Wind, Box, Lightbulb, Volume2, Power
 } from 'lucide-react';
 import { INITIAL_DEVICES } from './constants';
 import { Device, DeviceType } from './types';
@@ -14,10 +14,16 @@ import SmartAssistant from './components/SmartAssistant';
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'remotes' | 'fm' | 'ai'>('dashboard');
   const [devices, setDevices] = useState<Device[]>(INITIAL_DEVICES);
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLearningMode, setIsLearningMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [burstingId, setBurstingId] = useState<string | null>(null);
+
+  // Derive selected device from id to ensure state freshness
+  const selectedDevice = useMemo(() => 
+    devices.find(d => d.id === selectedDeviceId) || null
+  , [devices, selectedDeviceId]);
 
   // New Device Form State
   const [newDevice, setNewDevice] = useState({
@@ -57,6 +63,7 @@ const App: React.FC = () => {
       brand: newDevice.brand,
       type: newDevice.type,
       status: 'online',
+      powerState: 'on',
       icon: getIconForType(newDevice.type)
     };
 
@@ -65,11 +72,22 @@ const App: React.FC = () => {
     setNewDevice({ name: '', brand: '', type: DeviceType.TV });
   };
 
+  const togglePower = (deviceId: string) => {
+    setBurstingId(deviceId);
+    setTimeout(() => setBurstingId(null), 800);
+
+    setDevices(prev => prev.map(d => 
+      d.id === deviceId 
+        ? { ...d, powerState: d.powerState === 'on' ? 'off' : 'on' } 
+        : d
+    ));
+  };
+
   const handleDeviceClick = (device: Device) => {
     if (device.type === DeviceType.FM_TRANSMITTER) {
       setActiveTab('fm');
     } else {
-      setSelectedDevice(device);
+      setSelectedDeviceId(device.id);
       setActiveTab('remotes');
     }
   };
@@ -90,7 +108,7 @@ const App: React.FC = () => {
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-slate-900/50 border border-slate-800 rounded-full">
             <div className="flex items-center gap-1.5">
-               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+               <span className={`w-2 h-2 rounded-full ${burstingId ? 'bg-red-500 animate-ping' : 'bg-blue-500 animate-pulse'}`}></span>
                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">IR Hub</span>
             </div>
             <div className="w-[1px] h-3 bg-slate-800"></div>
@@ -145,7 +163,7 @@ const App: React.FC = () => {
         {/* Dynamic Content */}
         <div className="flex-1 space-y-8 min-w-0">
           {activeTab === 'dashboard' && (
-            <div className="space-y-8">
+            <div className="space-y-8 animate-in fade-in duration-500">
                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
                   <div>
                     <h2 className="text-4xl font-black tracking-tight">Infra Dashboard</h2>
@@ -178,19 +196,29 @@ const App: React.FC = () => {
                    <div 
                     key={device.id} 
                     onClick={() => handleDeviceClick(device)}
-                    className="bg-slate-900 border border-slate-800 hover:border-blue-500/50 p-6 rounded-[2.5rem] cursor-pointer transition-all hover:shadow-[0_20px_50px_rgba(37,99,235,0.1)] group flex flex-col justify-between min-h-[180px]"
+                    className={`bg-slate-900 border ${device.powerState === 'on' ? 'border-blue-500/30' : 'border-slate-800'} hover:border-blue-500/50 p-6 rounded-[2.5rem] cursor-pointer transition-all hover:shadow-[0_20px_50px_rgba(37,99,235,0.1)] group flex flex-col justify-between min-h-[180px] relative overflow-hidden`}
                    >
-                     <div className="flex justify-between items-start mb-4">
-                        <div className="w-14 h-14 bg-slate-800 rounded-3xl flex items-center justify-center text-2xl group-hover:bg-blue-600 group-hover:scale-110 group-hover:text-white transition-all shadow-inner relative overflow-hidden">
+                     {burstingId === device.id && (
+                       <div className="absolute inset-0 bg-blue-500/5 animate-pulse pointer-events-none"></div>
+                     )}
+                     
+                     <div className="flex justify-between items-start mb-4 relative z-10">
+                        <div className={`w-14 h-14 rounded-3xl flex items-center justify-center text-2xl transition-all shadow-inner relative overflow-hidden ${device.powerState === 'on' ? 'bg-blue-600 text-white scale-110 shadow-blue-500/20' : 'bg-slate-800 text-slate-400 grayscale'}`}>
                           {device.icon}
                         </div>
-                        <div className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${device.status === 'online' ? 'bg-green-500/5 border-green-500/20 text-green-500' : 'bg-red-500/5 border-red-500/20 text-red-500 opacity-50'}`}>
-                          {device.status}
-                        </div>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); togglePower(device.id); }}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${device.powerState === 'on' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-green-500/10 text-green-500 border border-green-500/20'}`}
+                        >
+                          <Power size={18} />
+                        </button>
                      </div>
-                     <div>
-                       <h3 className="font-black text-lg group-hover:text-blue-400 transition-colors leading-tight">{device.name}</h3>
-                       <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{device.brand}</p>
+                     <div className="relative z-10">
+                       <h3 className={`font-black text-lg transition-colors leading-tight ${device.powerState === 'on' ? 'text-white' : 'text-slate-500'}`}>{device.name}</h3>
+                       <div className="flex items-center justify-between mt-1">
+                          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{device.brand}</p>
+                          <span className={`text-[8px] font-black uppercase tracking-widest ${device.powerState === 'on' ? 'text-blue-400' : 'text-slate-600'}`}>{device.powerState}</span>
+                       </div>
                      </div>
                    </div>
                  ))}
@@ -201,7 +229,10 @@ const App: React.FC = () => {
           {activeTab === 'remotes' && (
             <div className="animate-in fade-in zoom-in duration-300">
                {selectedDevice ? (
-                 <DeviceRemote device={selectedDevice} />
+                 <DeviceRemote 
+                   device={selectedDevice} 
+                   onPowerToggle={() => togglePower(selectedDevice.id)}
+                 />
                ) : (
                  <div className="h-[600px] border-2 border-dashed border-slate-800 rounded-[2.5rem] flex flex-col items-center justify-center text-slate-600 bg-slate-900/30">
                     <Zap size={64} className="mb-6 opacity-10 animate-pulse" />

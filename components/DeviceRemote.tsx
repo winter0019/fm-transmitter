@@ -9,26 +9,32 @@ import { Device, DeviceType } from '../types';
 
 interface Props {
   device: Device;
+  onPowerToggle?: () => void;
 }
 
-const DeviceRemote: React.FC<Props> = ({ device }) => {
+const DeviceRemote: React.FC<Props> = ({ device, onPowerToggle }) => {
   const [temp, setTemp] = useState(22);
-  const [isOn, setIsOn] = useState(true);
   const [brightness, setBrightness] = useState(80);
   const [volume, setVolume] = useState(45);
   const [channel, setChannel] = useState(12);
   const [isTransmitting, setIsTransmitting] = useState(false);
-  const [lastCommand, setLastCommand] = useState<{name: string, hex: string} | null>(null);
   const [deviceLogs, setDeviceLogs] = useState<string[]>([]);
+
+  // Local state for power should be driven by props to keep it synced
+  const isOn = device.powerState === 'on';
 
   // Simulate IR transmission with hex protocol feedback
   const transmit = (cmdName: string) => {
     const hex = `0x${Math.floor(Math.random() * 0xFFFFFFFF).toString(16).toUpperCase().padStart(8, '0')}`;
     setIsTransmitting(true);
-    setLastCommand({ name: cmdName, hex });
     setDeviceLogs(prev => [`[${new Date().toLocaleTimeString()}] ${cmdName} -> ${hex}`, ...prev].slice(0, 5));
     
     setTimeout(() => setIsTransmitting(false), 300);
+  };
+
+  const handlePowerPress = () => {
+    transmit(isOn ? 'PWR_OFF' : 'PWR_ON');
+    if (onPowerToggle) onPowerToggle();
   };
 
   const renderTVRemote = () => (
@@ -51,7 +57,7 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
           </div>
         ) : (
           <div className="opacity-40">
-            <div className="w-1.5 h-1.5 rounded-full bg-red-600 mb-2 mx-auto"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-red-600 mb-2 mx-auto shadow-[0_0_10px_rgba(220,38,38,0.5)]"></div>
             <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Standby Mode</p>
           </div>
         )}
@@ -59,7 +65,7 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
       </div>
 
       <button 
-        onClick={() => { setIsOn(!isOn); transmit(isOn ? 'PWR_OFF' : 'PWR_ON'); }} 
+        onClick={handlePowerPress} 
         className={`col-span-3 h-14 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all ${isOn ? 'bg-red-600 hover:bg-red-500 shadow-lg shadow-red-600/20' : 'bg-slate-700 hover:bg-slate-600'}`}
       >
         <Power size={20} /> {isOn ? 'Power Off' : 'Power On'}
@@ -101,7 +107,7 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
 
   const renderACRemote = () => (
     <div className="space-y-6 p-4">
-      <button onClick={() => { setIsOn(!isOn); transmit('AC_PWR'); }} className={`w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all ${isOn ? 'bg-red-600' : 'bg-slate-700'}`}>
+      <button onClick={handlePowerPress} className={`w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all ${isOn ? 'bg-red-600' : 'bg-slate-700'}`}>
         <Power size={20} /> {isOn ? 'Turn AC Off' : 'Turn AC On'}
       </button>
 
@@ -151,7 +157,7 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
            </div>
         </div>
 
-        <button onClick={() => { setIsOn(!isOn); transmit('DSTV_PWR'); }} className={`p-5 rounded-2xl flex items-center justify-center shadow-lg transition-all active:scale-95 ${isOn ? 'bg-red-600 shadow-red-500/20' : 'bg-slate-700'}`}><Power /></button>
+        <button onClick={handlePowerPress} className={`p-5 rounded-2xl flex items-center justify-center shadow-lg transition-all active:scale-95 ${isOn ? 'bg-red-600 shadow-red-500/20' : 'bg-slate-700'}`}><Power /></button>
         <button onClick={() => transmit('BACK')} className="p-5 bg-slate-800 rounded-2xl flex items-center justify-center text-blue-400 border border-slate-700 active:scale-95"><Delete /></button>
         <button onClick={() => transmit('INFO')} className="p-5 bg-slate-800 rounded-2xl flex items-center justify-center font-black text-xs tracking-tighter border border-slate-700 active:scale-95">INFO</button>
 
@@ -166,7 +172,7 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
   const renderLightRemote = () => (
     <div className="space-y-8 p-6">
       <button 
-        onClick={() => { setIsOn(!isOn); transmit('LIGHT_PWR'); }} 
+        onClick={handlePowerPress} 
         className={`w-full h-16 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all ${isOn ? 'bg-yellow-500 hover:bg-yellow-400 shadow-lg shadow-yellow-500/20 text-slate-900' : 'bg-slate-700 hover:bg-slate-600'}`}
       >
         <Power size={20} /> {isOn ? 'Turn Lights Off' : 'Turn Lights On'}
@@ -209,7 +215,7 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
   const renderAudioRemote = () => (
     <div className="space-y-8 p-6">
        <button 
-         onClick={() => { setIsOn(!isOn); transmit('AUDIO_PWR'); }} 
+         onClick={handlePowerPress} 
          className={`w-full h-16 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all ${isOn ? 'bg-red-600 hover:bg-red-500 shadow-lg shadow-red-600/20' : 'bg-slate-700 hover:bg-slate-600'}`}
        >
         <Power size={20} /> {isOn ? 'Power Off' : 'Power On'}
