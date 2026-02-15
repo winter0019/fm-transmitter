@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Power, Volume2, Volume1, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, 
   Home, Menu, Delete, AirVent, Thermometer, Wind, Sun, Palette, Sliders,
-  Music, Radio, Mic2, Settings, Zap, Wifi, SignalLow
+  Music, Radio, Mic2, Settings, Zap, Wifi, SignalLow, Activity, Terminal
 } from 'lucide-react';
 import { Device, DeviceType } from '../types';
 
@@ -16,18 +16,50 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
   const [isOn, setIsOn] = useState(true);
   const [brightness, setBrightness] = useState(80);
   const [volume, setVolume] = useState(45);
+  const [channel, setChannel] = useState(12);
   const [isTransmitting, setIsTransmitting] = useState(false);
+  const [lastCommand, setLastCommand] = useState<{name: string, hex: string} | null>(null);
+  const [deviceLogs, setDeviceLogs] = useState<string[]>([]);
 
-  // Simulate IR transmission pulse
-  const transmit = () => {
+  // Simulate IR transmission with hex protocol feedback
+  const transmit = (cmdName: string) => {
+    const hex = `0x${Math.floor(Math.random() * 0xFFFFFFFF).toString(16).toUpperCase().padStart(8, '0')}`;
     setIsTransmitting(true);
-    setTimeout(() => setIsTransmitting(false), 200);
+    setLastCommand({ name: cmdName, hex });
+    setDeviceLogs(prev => [`[${new Date().toLocaleTimeString()}] ${cmdName} -> ${hex}`, ...prev].slice(0, 5));
+    
+    setTimeout(() => setIsTransmitting(false), 300);
   };
 
   const renderTVRemote = () => (
     <div className="grid grid-cols-3 gap-4 p-4">
+      {/* Virtual TV Feedback Monitor */}
+      <div className="col-span-3 bg-slate-950 rounded-2xl border-2 border-slate-800 p-4 mb-2 shadow-inner relative overflow-hidden h-32 flex flex-col justify-center items-center text-center">
+        {isOn ? (
+          <div className="animate-in fade-in duration-500">
+            <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Live Status: Hisense SmartOS</p>
+            <h4 className="text-3xl font-black tracking-tighter">CHANNEL {channel}</h4>
+            <div className="mt-2 flex items-center gap-4">
+              <div className="flex items-center gap-1">
+                <Volume2 size={12} className="text-slate-500" />
+                <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${volume}%` }}></div>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Input: HDMI 1</span>
+            </div>
+          </div>
+        ) : (
+          <div className="opacity-40">
+            <div className="w-1.5 h-1.5 rounded-full bg-red-600 mb-2 mx-auto"></div>
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Standby Mode</p>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent pointer-events-none"></div>
+      </div>
+
       <button 
-        onClick={() => { setIsOn(!isOn); transmit(); }} 
+        onClick={() => { setIsOn(!isOn); transmit(isOn ? 'PWR_OFF' : 'PWR_ON'); }} 
         className={`col-span-3 h-14 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all ${isOn ? 'bg-red-600 hover:bg-red-500 shadow-lg shadow-red-600/20' : 'bg-slate-700 hover:bg-slate-600'}`}
       >
         <Power size={20} /> {isOn ? 'Power Off' : 'Power On'}
@@ -35,41 +67,41 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
       
       <div className="col-span-3 grid grid-cols-3 gap-2 mt-4 bg-slate-800/50 p-4 rounded-3xl shadow-inner border border-slate-700/50">
         <div />
-        <button onClick={transmit} className="h-12 flex items-center justify-center bg-slate-700 rounded-xl hover:bg-slate-600 active:scale-95 transition-transform"><ChevronUp /></button>
+        <button onClick={() => transmit('NAV_UP')} className="h-12 flex items-center justify-center bg-slate-700 rounded-xl hover:bg-slate-600 active:scale-95 transition-transform"><ChevronUp /></button>
         <div />
-        <button onClick={transmit} className="h-12 flex items-center justify-center bg-slate-700 rounded-xl hover:bg-slate-600 active:scale-95 transition-transform"><ChevronLeft /></button>
-        <button onClick={transmit} className="h-12 flex items-center justify-center bg-blue-600 rounded-xl hover:bg-blue-500 font-bold active:scale-90 transition-transform shadow-lg shadow-blue-500/20">OK</button>
-        <button onClick={transmit} className="h-12 flex items-center justify-center bg-slate-700 rounded-xl hover:bg-slate-600 active:scale-95 transition-transform"><ChevronRight /></button>
+        <button onClick={() => transmit('NAV_LEFT')} className="h-12 flex items-center justify-center bg-slate-700 rounded-xl hover:bg-slate-600 active:scale-95 transition-transform"><ChevronLeft /></button>
+        <button onClick={() => transmit('NAV_OK')} className="h-12 flex items-center justify-center bg-blue-600 rounded-xl hover:bg-blue-500 font-bold active:scale-90 transition-transform shadow-lg shadow-blue-500/20">OK</button>
+        <button onClick={() => transmit('NAV_RIGHT')} className="h-12 flex items-center justify-center bg-slate-700 rounded-xl hover:bg-slate-600 active:scale-95 transition-transform"><ChevronRight /></button>
         <div />
-        <button onClick={transmit} className="h-12 flex items-center justify-center bg-slate-700 rounded-xl hover:bg-slate-600 active:scale-95 transition-transform"><ChevronDown /></button>
+        <button onClick={() => transmit('NAV_DOWN')} className="h-12 flex items-center justify-center bg-slate-700 rounded-xl hover:bg-slate-600 active:scale-95 transition-transform"><ChevronDown /></button>
         <div />
       </div>
 
       <div className="flex flex-col gap-4 items-center bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
-        <button onClick={() => { setVolume(v => Math.min(100, v+5)); transmit(); }} className="p-2 hover:text-blue-400"><Volume2 /></button>
+        <button onClick={() => { setVolume(v => Math.min(100, v+5)); transmit('VOL_UP'); }} className="p-2 hover:text-blue-400"><Volume2 /></button>
         <div className="w-2 h-24 bg-slate-700 rounded-full relative overflow-hidden">
             <div className="absolute bottom-0 left-0 w-full bg-blue-500 rounded-full transition-all duration-300" style={{ height: `${volume}%` }}></div>
         </div>
-        <button onClick={() => { setVolume(v => Math.max(0, v-5)); transmit(); }} className="p-2 hover:text-blue-400"><Volume1 /></button>
+        <button onClick={() => { setVolume(v => Math.max(0, v-5)); transmit('VOL_DOWN'); }} className="p-2 hover:text-blue-400"><Volume1 /></button>
       </div>
       
       <div className="flex flex-col gap-4 items-center bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
-        <button onClick={transmit} className="p-2 hover:text-blue-400 font-bold">CH+</button>
-        <div className="text-xl font-mono text-blue-400 font-bold">12</div>
-        <button onClick={transmit} className="p-2 hover:text-blue-400 font-bold">CH-</button>
+        <button onClick={() => { setChannel(c => c + 1); transmit('CH_UP'); }} className="p-2 hover:text-blue-400 font-bold">CH+</button>
+        <div className="text-xl font-mono text-blue-400 font-bold">{channel}</div>
+        <button onClick={() => { setChannel(c => Math.max(1, c - 1)); transmit('CH_DOWN'); }} className="p-2 hover:text-blue-400 font-bold">CH-</button>
       </div>
 
       <div className="flex flex-col gap-4 items-center bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
-        <button onClick={transmit} className="p-2 hover:text-blue-400"><Home size={20} /></button>
-        <button onClick={transmit} className="p-2 hover:text-blue-400"><Menu size={20} /></button>
-        <button onClick={transmit} className="p-2 hover:text-blue-400 font-bold text-xs">EXIT</button>
+        <button onClick={() => transmit('MENU_HOME')} className="p-2 hover:text-blue-400"><Home size={20} /></button>
+        <button onClick={() => transmit('MENU_NAV')} className="p-2 hover:text-blue-400"><Menu size={20} /></button>
+        <button onClick={() => transmit('MENU_EXIT')} className="p-2 hover:text-blue-400 font-bold text-xs">EXIT</button>
       </div>
     </div>
   );
 
   const renderACRemote = () => (
     <div className="space-y-6 p-4">
-      <button onClick={() => { setIsOn(!isOn); transmit(); }} className={`w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all ${isOn ? 'bg-red-600' : 'bg-slate-700'}`}>
+      <button onClick={() => { setIsOn(!isOn); transmit('AC_PWR'); }} className={`w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all ${isOn ? 'bg-red-600' : 'bg-slate-700'}`}>
         <Power size={20} /> {isOn ? 'Turn AC Off' : 'Turn AC On'}
       </button>
 
@@ -79,15 +111,15 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
         </div>
         <p className="text-sm text-blue-400 font-black uppercase tracking-widest mb-2">Cooling Mode</p>
         <div className="flex items-center justify-center gap-6">
-          <button onClick={() => { setTemp(t => t - 1); transmit(); }} className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center hover:bg-slate-700 text-2xl font-bold border border-slate-700 shadow-lg">-</button>
+          <button onClick={() => { setTemp(t => t - 1); transmit('TEMP_DOWN'); }} className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center hover:bg-slate-700 text-2xl font-bold border border-slate-700 shadow-lg">-</button>
           <span className="text-7xl font-black tracking-tighter text-white">{temp}°</span>
-          <button onClick={() => { setTemp(t => t + 1); transmit(); }} className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center hover:bg-slate-700 text-2xl font-bold border border-slate-700 shadow-lg">+</button>
+          <button onClick={() => { setTemp(t => t + 1); transmit('TEMP_UP'); }} className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center hover:bg-slate-700 text-2xl font-bold border border-slate-700 shadow-lg">+</button>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         {['Auto', 'Swing', 'Turbo'].map((mode) => (
-          <button key={mode} onClick={transmit} className="flex flex-col items-center gap-3 p-5 bg-slate-800/80 rounded-3xl hover:bg-slate-700 transition-all border border-slate-700 group active:scale-95">
+          <button key={mode} onClick={() => transmit(`AC_MODE_${mode.toUpperCase()}`)} className="flex flex-col items-center gap-3 p-5 bg-slate-800/80 rounded-3xl hover:bg-slate-700 transition-all border border-slate-700 group active:scale-95">
             {mode === 'Auto' && <Wind className="text-blue-400 group-hover:scale-110 transition-transform" />}
             {mode === 'Swing' && <AirVent className="text-blue-400 group-hover:scale-110 transition-transform" />}
             {mode === 'Turbo' && <Thermometer className="text-blue-400 group-hover:scale-110 transition-transform" />}
@@ -100,42 +132,41 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
 
   const renderDStvRemote = () => (
      <div className="grid grid-cols-3 gap-4 p-4">
-        <button onClick={transmit} className="h-12 bg-slate-800 rounded-xl hover:bg-slate-700 font-bold text-blue-400 border border-slate-700 active:scale-95 transition-all">PVR</button>
-        <button onClick={transmit} className="h-12 bg-slate-800 rounded-xl hover:bg-slate-700 font-bold text-blue-400 border border-slate-700 active:scale-95 transition-all">TV</button>
-        <button onClick={transmit} className="h-12 bg-slate-800 rounded-xl hover:bg-slate-700 font-bold text-blue-400 border border-slate-700 active:scale-95 transition-all">GUIDE</button>
+        <button onClick={() => transmit('PVR')} className="h-12 bg-slate-800 rounded-xl hover:bg-slate-700 font-bold text-blue-400 border border-slate-700 active:scale-95 transition-all">PVR</button>
+        <button onClick={() => transmit('TV')} className="h-12 bg-slate-800 rounded-xl hover:bg-slate-700 font-bold text-blue-400 border border-slate-700 active:scale-95 transition-all">TV</button>
+        <button onClick={() => transmit('GUIDE')} className="h-12 bg-slate-800 rounded-xl hover:bg-slate-700 font-bold text-blue-400 border border-slate-700 active:scale-95 transition-all">GUIDE</button>
 
         <div className="col-span-3 grid grid-cols-3 gap-2 py-8 relative">
            <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
               <div className="w-48 h-48 border-[20px] border-white rounded-full"></div>
            </div>
            <div className="col-start-2 flex flex-col gap-4 items-center">
-              <button onClick={transmit} className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border border-slate-700 active:scale-95"><ChevronUp /></button>
+              <button onClick={() => transmit('NAV_UP')} className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border border-slate-700 active:scale-95"><ChevronUp /></button>
               <div className="flex gap-4">
-                <button onClick={transmit} className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border border-slate-700 active:scale-95"><ChevronLeft /></button>
-                <button onClick={transmit} className="h-20 w-20 rounded-full bg-blue-600 flex items-center justify-center shadow-2xl shadow-blue-600/30 font-black text-xl active:scale-90">OK</button>
-                <button onClick={transmit} className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border border-slate-700 active:scale-95"><ChevronRight /></button>
+                <button onClick={() => transmit('NAV_LEFT')} className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border border-slate-700 active:scale-95"><ChevronLeft /></button>
+                <button onClick={() => transmit('NAV_OK')} className="h-20 w-20 rounded-full bg-blue-600 flex items-center justify-center shadow-2xl shadow-blue-600/30 font-black text-xl active:scale-90">OK</button>
+                <button onClick={() => transmit('NAV_RIGHT')} className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border border-slate-700 active:scale-95"><ChevronRight /></button>
               </div>
-              <button onClick={transmit} className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border border-slate-700 active:scale-95"><ChevronDown /></button>
+              <button onClick={() => transmit('NAV_DOWN')} className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border border-slate-700 active:scale-95"><ChevronDown /></button>
            </div>
         </div>
 
-        <button onClick={() => { setIsOn(!isOn); transmit(); }} className={`p-5 rounded-2xl flex items-center justify-center shadow-lg transition-all active:scale-95 ${isOn ? 'bg-red-600 shadow-red-500/20' : 'bg-slate-700'}`}><Power /></button>
-        <button onClick={transmit} className="p-5 bg-slate-800 rounded-2xl flex items-center justify-center text-blue-400 border border-slate-700 active:scale-95"><Delete /></button>
-        <button onClick={transmit} className="p-5 bg-slate-800 rounded-2xl flex items-center justify-center font-black text-xs tracking-tighter border border-slate-700 active:scale-95">INFO</button>
+        <button onClick={() => { setIsOn(!isOn); transmit('DSTV_PWR'); }} className={`p-5 rounded-2xl flex items-center justify-center shadow-lg transition-all active:scale-95 ${isOn ? 'bg-red-600 shadow-red-500/20' : 'bg-slate-700'}`}><Power /></button>
+        <button onClick={() => transmit('BACK')} className="p-5 bg-slate-800 rounded-2xl flex items-center justify-center text-blue-400 border border-slate-700 active:scale-95"><Delete /></button>
+        <button onClick={() => transmit('INFO')} className="p-5 bg-slate-800 rounded-2xl flex items-center justify-center font-black text-xs tracking-tighter border border-slate-700 active:scale-95">INFO</button>
 
         <div className="col-span-3 grid grid-cols-4 gap-2 mt-4">
           {['1','2','3','4','5','6','7','8','9','*','0','#'].map(num => (
-            <button key={num} onClick={transmit} className="h-12 bg-slate-900/50 rounded-xl hover:bg-slate-800 font-mono font-bold text-slate-300 border border-slate-800 active:scale-95 transition-all">{num}</button>
+            <button key={num} onClick={() => transmit(`KEY_${num}`)} className="h-12 bg-slate-900/50 rounded-xl hover:bg-slate-800 font-mono font-bold text-slate-300 border border-slate-800 active:scale-95 transition-all">{num}</button>
           ))}
         </div>
      </div>
   );
 
-  // Added renderLightRemote to fix the missing function error
   const renderLightRemote = () => (
     <div className="space-y-8 p-6">
       <button 
-        onClick={() => { setIsOn(!isOn); transmit(); }} 
+        onClick={() => { setIsOn(!isOn); transmit('LIGHT_PWR'); }} 
         className={`w-full h-16 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all ${isOn ? 'bg-yellow-500 hover:bg-yellow-400 shadow-lg shadow-yellow-500/20 text-slate-900' : 'bg-slate-700 hover:bg-slate-600'}`}
       >
         <Power size={20} /> {isOn ? 'Turn Lights Off' : 'Turn Lights On'}
@@ -151,7 +182,7 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
           min="0" 
           max="100" 
           value={brightness} 
-          onChange={(e) => { setBrightness(parseInt(e.target.value)); transmit(); }}
+          onChange={(e) => { setBrightness(parseInt(e.target.value)); transmit('LIGHT_DIM'); }}
           className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
         />
         <div className="flex justify-between">
@@ -164,7 +195,7 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
         {['Daylight', 'Warm', 'Reading', 'Night'].map((mode) => (
           <button 
             key={mode} 
-            onClick={transmit} 
+            onClick={() => transmit(`LIGHT_MODE_${mode.toUpperCase()}`)} 
             className="p-5 bg-slate-800 rounded-3xl flex flex-col items-center gap-3 hover:bg-slate-700 transition-all border border-slate-700 group active:scale-95"
           >
             <Palette size={20} className="text-blue-400 group-hover:scale-110 transition-transform" />
@@ -175,11 +206,10 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
     </div>
   );
 
-  // Added renderAudioRemote to fix the missing function error
   const renderAudioRemote = () => (
     <div className="space-y-8 p-6">
        <button 
-         onClick={() => { setIsOn(!isOn); transmit(); }} 
+         onClick={() => { setIsOn(!isOn); transmit('AUDIO_PWR'); }} 
          className={`w-full h-16 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all ${isOn ? 'bg-red-600 hover:bg-red-500 shadow-lg shadow-red-600/20' : 'bg-slate-700 hover:bg-slate-600'}`}
        >
         <Power size={20} /> {isOn ? 'Power Off' : 'Power On'}
@@ -193,13 +223,13 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
         
         <div className="flex gap-6 w-full">
           <button 
-            onClick={() => { setVolume(v => Math.max(0, v - 5)); transmit(); }} 
+            onClick={() => { setVolume(v => Math.max(0, v - 5)); transmit('AUDIO_VOL_DOWN'); }} 
             className="flex-1 h-20 bg-slate-800 rounded-2xl flex items-center justify-center hover:bg-slate-700 border border-slate-700 shadow-xl active:scale-95 transition-all"
           >
             <Volume1 size={28} />
           </button>
           <button 
-            onClick={() => { setVolume(v => Math.min(100, v + 5)); transmit(); }} 
+            onClick={() => { setVolume(v => Math.min(100, v + 5)); transmit('AUDIO_VOL_UP'); }} 
             className="flex-1 h-20 bg-slate-800 rounded-2xl flex items-center justify-center hover:bg-slate-700 border border-slate-700 shadow-xl active:scale-95 transition-all"
           >
             <Volume2 size={28} />
@@ -211,7 +241,7 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
         {['Bluetooth', 'Optical', 'HDMI ARC', 'Aux'].map((input) => (
           <button 
             key={input} 
-            onClick={transmit} 
+            onClick={() => transmit(`AUDIO_IN_${input.toUpperCase()}`)} 
             className="p-5 bg-slate-800 rounded-3xl hover:bg-slate-700 transition-all border border-slate-700 font-black text-[10px] uppercase tracking-widest active:scale-95"
           >
             {input}
@@ -246,6 +276,7 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
           </div>
         </div>
         <div className="flex gap-2">
+           <button onClick={() => setDeviceLogs([])} className="p-2 hover:bg-slate-700 rounded-xl transition-colors text-slate-500 hover:text-white"><Terminal size={18} /></button>
           <button className="p-2 hover:bg-slate-700 rounded-xl transition-colors text-slate-400"><Settings size={18} /></button>
         </div>
       </div>
@@ -258,17 +289,22 @@ const DeviceRemote: React.FC<Props> = ({ device }) => {
         {device.type === DeviceType.SOUNDBAR && renderAudioRemote()}
       </div>
 
-      <div className="p-6 border-t border-slate-800 bg-slate-950/80 backdrop-blur-xl">
-         <div className="flex justify-between items-center px-2">
-            <div className="flex items-center gap-2">
-              <SignalLow size={14} className="text-blue-500" />
-              <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">
-                IR Hub v2.4 Connection Stable
-              </p>
+      {/* Protocol Log Footer */}
+      <div className="p-4 border-t border-slate-800 bg-slate-950/90 backdrop-blur-xl">
+         <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Activity size={12} className="text-blue-500" />
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Protocol Stream (Hex)</span>
+              </div>
+              <span className="text-[8px] font-black text-blue-500/50">LIVE_TELEMETRY</span>
             </div>
-            <div className="flex gap-1.5">
-              <div className={`w-2 h-2 rounded-full transition-colors ${isTransmitting ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-blue-500'}`}></div>
-              <div className="w-2 h-2 rounded-full bg-slate-700"></div>
+            <div className="bg-black/40 rounded-lg p-2 font-mono text-[9px] text-slate-400 space-y-1 h-20 overflow-y-auto custom-scrollbar border border-slate-800 shadow-inner">
+               {deviceLogs.length > 0 ? (
+                 deviceLogs.map((log, i) => <div key={i} className={i === 0 ? 'text-blue-400 font-bold' : ''}>{log}</div>)
+               ) : (
+                 <div className="text-slate-600 italic">Waiting for IR command trigger...</div>
+               )}
             </div>
          </div>
       </div>
