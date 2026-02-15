@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Radio, Music, Volume2, FastForward, Rewind, Play, Pause, Bluetooth, Zap, SignalHigh, Globe, Waves, Activity, Mic2, Disc } from 'lucide-react';
+// Added Smartphone and CarFront to the imports
+import { Radio, Music, Volume2, FastForward, Rewind, Play, Pause, Bluetooth, Zap, SignalHigh, Globe, Waves, Activity, Mic2, Disc, Info, CheckCircle2, Smartphone, CarFront } from 'lucide-react';
 import { FM_FREQUENCIES } from '../constants';
 
 const FMTransmitter: React.FC = () => {
@@ -10,6 +11,7 @@ const FMTransmitter: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [isPaired, setIsPaired] = useState(false);
   const [currentTrack, setCurrentTrack] = useState({ title: "Summer Vibes Mix", artist: "DJ Omni" });
+  const [showSetupGuide, setShowSetupGuide] = useState(true);
 
   const adjustFrequency = (val: number) => {
     const newFreq = Math.round((frequency + val) * 10) / 10;
@@ -41,11 +43,28 @@ const FMTransmitter: React.FC = () => {
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-[2.5rem] p-8 shadow-2xl space-y-8 max-w-md mx-auto relative overflow-hidden ring-1 ring-white/5">
-      {/* Dynamic Background Waves when transmitting */}
-      {isTransmitting && (
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-[200%] bg-[radial-gradient(circle,_rgba(59,130,246,0.3)_0%,_transparent_70%)] animate-pulse"></div>
+    <div className="bg-slate-900 border border-slate-700 rounded-[2.5rem] p-6 sm:p-8 shadow-2xl space-y-6 sm:space-y-8 max-w-md mx-auto relative overflow-hidden ring-1 ring-white/5">
+      {/* Setup Guide Overlay/Tooltip */}
+      {showSetupGuide && (
+        <div className="bg-blue-600/10 border border-blue-500/30 rounded-3xl p-4 mb-4 relative overflow-hidden animate-in fade-in duration-500">
+           <button onClick={() => setShowSetupGuide(false)} className="absolute top-2 right-2 text-blue-500/50 hover:text-blue-500">
+              <Info size={16} />
+           </button>
+           <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Zap size={12} /> Car Audio Quick Setup
+           </h4>
+           <ul className="space-y-2">
+              {[
+                "Pair your phone to car's Bluetooth or OmniLink Bridge.",
+                "Find an empty station (static only) on your car radio.",
+                "Match the MHz on this screen to your car's radio."
+              ].map((step, idx) => (
+                <li key={idx} className="flex gap-2 text-[10px] font-bold text-slate-300">
+                   <span className="text-blue-500">{idx + 1}.</span>
+                   {step}
+                </li>
+              ))}
+           </ul>
         </div>
       )}
 
@@ -74,15 +93,15 @@ const FMTransmitter: React.FC = () => {
                   <Bluetooth size={18} className={isPaired ? 'text-white' : 'text-slate-600'} />
                </div>
                <div>
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Audio Source</p>
-                  <h4 className="text-xs font-black">{isPaired ? 'iPhone 15 Connected' : 'No Phone Found'}</h4>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Phone Link</p>
+                  <h4 className="text-xs font-black">{isPaired ? 'Laptop/iPhone Linked' : 'Searching Source...'}</h4>
                </div>
             </div>
             <button 
                onClick={togglePairing}
                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${isPaired ? 'bg-slate-800 text-slate-400 hover:text-white' : 'bg-blue-600 text-white hover:bg-blue-500'}`}
             >
-               {isPaired ? 'Disconnect' : 'Pair Phone'}
+               {isPaired ? 'Unlink' : 'Connect'}
             </button>
          </div>
 
@@ -98,7 +117,7 @@ const FMTransmitter: React.FC = () => {
                  </div>
                  <button 
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/20 hover:scale-105 active:scale-90 transition-all"
+                  className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/20 hover:scale-105 active:scale-75 transition-all"
                  >
                     {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-1" />}
                  </button>
@@ -108,26 +127,26 @@ const FMTransmitter: React.FC = () => {
       </div>
 
       {/* Frequency Master Display */}
-      <div className="bg-slate-950 rounded-[2rem] p-8 text-center border-2 border-slate-800 relative overflow-hidden shadow-2xl group ring-1 ring-white/5">
+      <div className="bg-slate-950 rounded-[2rem] p-6 sm:p-8 text-center border-2 border-slate-800 relative overflow-hidden shadow-2xl group ring-1 ring-white/5">
         <div className="absolute top-4 left-6 flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
            <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Stereo</span>
         </div>
         
         <div className="absolute top-4 right-6 flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">RDS: Active</span>
+           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">RDS: Sync</span>
         </div>
 
         {/* Digital Frequency readout */}
         <div className="relative py-4">
-          <span className={`text-8xl font-mono font-black tracking-tighter transition-all duration-300 ${isScanning ? 'blur-sm text-blue-900' : 'text-blue-400 drop-shadow-[0_0_20px_rgba(96,165,250,0.4)]'}`}>
+          <span className={`text-6xl sm:text-8xl font-mono font-black tracking-tighter transition-all duration-300 ${isScanning ? 'blur-sm text-blue-900' : 'text-blue-400 drop-shadow-[0_0_20px_rgba(96,165,250,0.4)]'}`}>
             {frequency.toFixed(1)}
           </span>
-          <span className="text-slate-500 ml-3 font-black text-lg uppercase align-bottom">MHz</span>
+          <span className="text-slate-500 ml-3 font-black text-sm sm:text-lg uppercase align-bottom">MHz</span>
         </div>
         
         {/* Visualizer bars */}
-        <div className="flex justify-center gap-1.5 h-8 items-end mt-2">
+        <div className="flex justify-center gap-1 sm:gap-1.5 h-8 items-end mt-2">
           {[...Array(20)].map((_, i) => (
             <div 
               key={i} 
@@ -141,27 +160,27 @@ const FMTransmitter: React.FC = () => {
           <button 
             onClick={handleScan}
             disabled={isScanning}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isScanning ? 'bg-blue-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-500 hover:text-blue-400'}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-90 ${isScanning ? 'bg-blue-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-500 hover:text-blue-400'}`}
           >
             <Activity size={12} className={isScanning ? 'animate-spin' : ''} />
-            {isScanning ? 'Scanning...' : 'Scan Clear Channels'}
+            {isScanning ? 'Scanning...' : 'Find Clear Station'}
           </button>
         </div>
       </div>
 
       {/* Main Broadcast Control */}
       <div className="flex flex-col items-center gap-6">
-        <div className="flex justify-center gap-6 relative z-10 w-full">
+        <div className="flex justify-center gap-4 sm:gap-6 relative z-10 w-full">
           <button 
             onClick={() => adjustFrequency(-0.1)}
-            className="w-16 h-16 rounded-3xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-all active:scale-90 border border-slate-700 shadow-xl group"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-all active:scale-75 border border-slate-700 shadow-xl group"
           >
             <Rewind size={24} className="group-hover:text-blue-400 transition-colors" />
           </button>
           
           <button 
             onClick={() => setIsTransmitting(!isTransmitting)}
-            className={`w-28 h-28 rounded-[2.5rem] flex flex-col items-center justify-center transition-all active:scale-95 border-4 group ${isTransmitting ? 'bg-blue-600 border-blue-400 shadow-[0_0_40px_rgba(37,99,235,0.4)]' : 'bg-slate-800 border-slate-700 text-slate-500'}`}
+            className={`w-24 h-24 sm:w-28 sm:h-28 rounded-[2.5rem] flex flex-col items-center justify-center transition-all active:scale-75 border-4 group ${isTransmitting ? 'bg-blue-600 border-blue-400 shadow-[0_0_40px_rgba(37,99,235,0.4)]' : 'bg-slate-800 border-slate-700 text-slate-500'}`}
           >
             <Waves size={40} className={isTransmitting ? 'text-white animate-pulse' : 'text-slate-600'} />
             <span className="text-[10px] font-black uppercase mt-2 tracking-[0.2em]">{isTransmitting ? 'Stop' : 'Broadcast'}</span>
@@ -169,7 +188,7 @@ const FMTransmitter: React.FC = () => {
           
           <button 
             onClick={() => adjustFrequency(0.1)}
-            className="w-16 h-16 rounded-3xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-all active:scale-90 border border-slate-700 shadow-xl group"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-all active:scale-75 border border-slate-700 shadow-xl group"
           >
             <FastForward size={24} className="group-hover:text-blue-400 transition-colors" />
           </button>
@@ -179,11 +198,11 @@ const FMTransmitter: React.FC = () => {
       {/* Protocol Visualization: Phone -> Transmit -> Car */}
       <div className="bg-slate-950/60 rounded-3xl p-6 border border-slate-800 relative shadow-inner">
          <div className="flex justify-between items-center mb-6">
-            <div className="flex flex-col items-center gap-2 group">
+            <div className="flex flex-col items-center gap-2">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${isPaired ? 'bg-blue-600/10 border-blue-500/40 shadow-[0_0_10px_rgba(37,99,235,0.2)]' : 'bg-slate-900 border-slate-800'}`}>
-                <Bluetooth size={18} className={isPaired ? 'text-blue-400' : 'text-slate-600'} />
+                <Smartphone size={18} className={isPaired ? 'text-blue-400' : 'text-slate-600'} />
               </div>
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Phone</span>
+              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Mobile</span>
             </div>
             
             <div className="flex-1 flex flex-col items-center gap-2">
@@ -198,17 +217,17 @@ const FMTransmitter: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-col items-center gap-2 group">
+            <div className="flex flex-col items-center gap-2">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${isTransmitting ? 'bg-blue-600/10 border-blue-500/40' : 'bg-slate-900 border-slate-800'}`}>
-                <SignalHigh size={18} className={isTransmitting ? 'text-blue-400' : 'text-slate-700'} />
+                <CarFront size={18} className={isTransmitting ? 'text-blue-400' : 'text-slate-700'} />
               </div>
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Car FM</span>
+              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Car Headunit</span>
             </div>
          </div>
          
-         <div className="bg-blue-600/5 p-4 rounded-2xl border border-blue-500/10">
-            <p className="text-[10px] text-slate-400 font-bold leading-relaxed text-center italic">
-              "Tunneling digital audio into <span className="text-blue-400">Low-Latency FM Radio Signal</span>. Set your car's head unit to match the MHz above."
+         <div className="bg-blue-600/5 p-4 rounded-2xl border border-blue-500/10 text-center">
+            <p className="text-[10px] text-slate-400 font-bold leading-relaxed italic">
+              "Mapping digital audio to <span className="text-blue-400">Low-Latency FM Radio Signal</span>."
             </p>
          </div>
       </div>
